@@ -7,7 +7,7 @@ from atomic_models.urls import is_booking_platform, is_chain_franchise, is_socia
 
 from atomic_analyzer.checks.runner import run_all_checks
 from atomic_analyzer.config import AnalyzerSettings
-from atomic_analyzer.contact_finder import find_contact_email
+from atomic_analyzer.contact_pages import ContactPageResult, discover_contact_page
 from atomic_analyzer.fetch import fetch_page, try_fetch_http_fallback
 from atomic_analyzer.scoring import compute_score
 
@@ -37,6 +37,7 @@ class WebsiteAuditor:
         page = None
         fetch_error: str | None = None
         homepage_html: str | None = None
+        contact = ContactPageResult()
 
         if not early_skip:
             try:
@@ -51,30 +52,31 @@ class WebsiteAuditor:
                 fetch_error = str(exc)[:200]
                 logger.warning("Fetch failed for %s: %s", website, fetch_error)
 
+            if page and "unreachable" not in (fetch_error or ""):
+                contact = discover_contact_page(website, homepage_html, self.settings)
+                if contact.email:
+                    logger.info(
+                        "Found contact email for %s: %s (%s)",
+                        lead.name,
+                        contact.email,
+                        contact.email_source,
+                    )
+
         issues, metrics = run_all_checks(
             lead,
             page,
             settings=self.settings,
             fetch_error=fetch_error,
+            contact=contact if not early_skip else None,
         )
 
-        # Contact email discovery (owned sites only)
         updated_lead = lead
-        codes = {i.code for i in issues}
-        if (
-            not early_skip
-            and "unreachable" not in codes
-            and not lead.email
-        ):
-            email, source = find_contact_email(website, homepage_html, self.settings)
-            if email:
-                metrics.contact_email = email
-                metrics.contact_email_source = source
-                updated_lead = lead.model_copy(update={"email": email})
-                logger.info("Found contact email for %s: %s (%s)", lead.name, email, source)
+        if contact.email and not lead.email:
+            updated_lead = lead.model_copy(update={"email": contact.email})
 
         skip_reason: str | None = None
         audit_status = "ok"
+        codes = {i.code for i in issues}
         if "chain_franchise" in codes:
             skip_reason = "chain_franchise"
             audit_status = "skipped"

@@ -3,7 +3,14 @@ from atomic_models.constants import CTA_KEYWORDS
 from atomic_models.lead import BusinessLead
 from atomic_models.urls import is_booking_platform, is_chain_franchise, is_social_only
 
+from atomic_analyzer.checks.p1 import (
+    check_contact_page,
+    check_copyright,
+    check_local_business_schema,
+    check_wordpress,
+)
 from atomic_analyzer.config import AnalyzerSettings
+from atomic_analyzer.contact_pages import ContactPageResult
 from atomic_analyzer.page_context import PageContext
 
 
@@ -17,6 +24,7 @@ def run_all_checks(
     *,
     settings: AnalyzerSettings,
     fetch_error: str | None = None,
+    contact: ContactPageResult | None = None,
 ) -> tuple[list[AuditIssue], AuditMetrics]:
     issues: list[AuditIssue] = []
     metrics = AuditMetrics()
@@ -73,6 +81,10 @@ def run_all_checks(
     metrics.final_url = page.final_url
     metrics.has_ssl = page.has_ssl
 
+    if contact and contact.email:
+        metrics.contact_email = contact.email
+        metrics.contact_email_source = contact.email_source
+
     if not page.has_ssl:
         issues.append(_issue("no_ssl", "Site is not served over HTTPS (no SSL)", "critical"))
 
@@ -117,10 +129,9 @@ def run_all_checks(
             )
         )
 
-    schema_scripts = page.soup.find_all("script", attrs={"type": "application/ld+json"})
-    metrics.has_schema = len(schema_scripts) > 0
-    if not schema_scripts:
-        issues.append(_issue("no_schema", "No schema.org structured data found", "info"))
+    issues.extend(check_local_business_schema(page, metrics))
+    issues.extend(check_wordpress(page, metrics))
+    issues.extend(check_copyright(page, metrics))
 
     forms = page.soup.find_all("form")
     metrics.form_count = len(forms)
@@ -133,7 +144,7 @@ def run_all_checks(
         issues.append(
             _issue(
                 "broken_forms",
-                f"{broken_forms} contact form(s) may be misconfigured",
+                f"{broken_forms} contact form(s) may be misconfigured on homepage",
                 "warning",
             )
         )
@@ -154,6 +165,17 @@ def run_all_checks(
         issues.append(_issue("missing_h1", "No H1 heading on homepage", "info"))
     elif len(h1_tags) > 1:
         issues.append(_issue("multiple_h1", "Multiple H1 headings on homepage", "info"))
+
+    if contact is not None:
+        issues.extend(
+            check_contact_page(
+                homepage=page,
+                contact_html=contact.html,
+                contact_url=contact.url,
+                contact_email=contact.email or lead.email,
+                metrics=metrics,
+            )
+        )
 
     return issues, metrics
 

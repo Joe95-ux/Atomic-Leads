@@ -17,6 +17,10 @@ def write_summary_json(reports: list[WebsiteAuditReport], path: Path) -> None:
             "issues": r.issues,
             "score": r.score,
             "contact_email": r.lead.email if r.lead else None,
+            "is_wordpress": r.metrics.is_wordpress,
+            "has_local_business_schema": r.metrics.has_local_business_schema,
+            "copyright_year": r.metrics.copyright_year,
+            "contact_page_url": r.metrics.contact_page_url,
             "pitch_type": pitch_type(r),
             "skip_outreach": outreach_skip_reason(r),
         }

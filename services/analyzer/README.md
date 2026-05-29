@@ -2,75 +2,56 @@
 
 Audits business websites from **scraper JSONL** output and produces sales-ready issue lists for outreach.
 
-## Checks (v0)
+## Checks
+
+### Core (homepage)
 
 | Issue | What it detects |
 |-------|-----------------|
-| No website | Missing URL on Maps listing |
-| Third-party booking | Vagaro, Booksy, etc. instead of owned site |
-| No SSL | HTTP-only or HTTPS failure |
-| Unreachable | Timeout / connection errors |
-| Slow response | Homepage slower than threshold (default 3s) |
-| Missing meta description | SEO gap |
-| Missing / weak title | SEO gap |
-| Not mobile optimized | No viewport meta tag |
-| No schema | No JSON-LD structured data |
-| No CTA | No contact/book/quote links or buttons |
-| Broken forms | Forms with empty/`#` actions |
-| Missing / multiple H1 | Basic on-page SEO |
+| Chain / franchise | Corporate locator pages (Hair Cuttery, Sola, etc.) |
+| Social only | Facebook/Instagram instead of owned site |
+| Third-party booking | Vagaro, Booksy, etc. |
+| No SSL / unreachable / slow | Technical basics |
+| Title, meta description, viewport | SEO + mobile hints |
+| CTA, H1, homepage forms | Conversion + on-page SEO |
 
-Each business gets a **score 0–100** (lower = more issues to fix = stronger pitch).
+### P1 (depth, still lightweight)
+
+| Issue | What it detects |
+|-------|-----------------|
+| **no_local_business_schema** | JSON-LD exists but no `LocalBusiness` / `HairSalon` type |
+| **wordpress_detected** | WordPress site (maintenance pitch angle) |
+| **outdated_copyright** | Footer copyright 2+ years old |
+| **Contact page** | Fetches `/contact`, `/contact-us`, etc. |
+| **contact_page_broken_form** | Misconfigured form on contact page |
+| **contact_page_no_form** | Contact page with no form or email |
+| **no_contact_page** | No working contact URL found |
+
+Contact email is discovered during the same contact-page pass.
 
 ## Setup
 
 ```bash
-cd services/analyzer
-python -m venv .venv
-.venv\Scripts\activate   # Windows
-pip install -e .
+cd services
+.venv\Scripts\activate
+pip install -e ./atomic_models -e ./analyzer
 ```
 
 ## Usage
 
 ```bash
-# Audit a scraper run
-atomic-audit run ../scraper/output/hair-salons-austin-tx-20260527-033213.jsonl
-
-# Single URL smoke test
+atomic-audit run ../scraper/output/your-scrape.jsonl
 atomic-audit one -u "https://example.com" -n "Example Co"
 ```
 
 ## Output
 
-For input `hair-salons-....jsonl`:
-
-- `output/hair-salons-...-audit-TIMESTAMP.jsonl` — full reports (for DB / AI step)
-- `output/hair-salons-...-audit-TIMESTAMP-summary.json` — compact `{ business, website, issues, score }`
-- `output/...-meta.json` — run stats
-
-### Example summary entry
-
-```json
-{
-  "business": "ABC Roofing",
-  "website": "https://abcroofing.com",
-  "issues": [
-    "Missing meta description",
-    "Missing viewport meta tag (likely poor mobile experience)",
-    "No schema.org structured data found"
-  ],
-  "score": 71
-}
-```
+- `output/*-audit-*.jsonl` — full reports + `metrics` (wordpress, copyright, contact URL, etc.)
+- `output/*-summary.json` — compact view with `pitch_type`, `contact_email`
+- `output/*.meta.json` — run stats
 
 ## Pipeline
 
 ```
-atomic-scrape maps  →  atomic-audit run  →  AI email (next)  →  outreach
+atomic-scrape maps  →  atomic-audit run  →  atomic-outreach draft
 ```
-
-## Notes
-
-- Analyzer uses **HTTP + BeautifulSoup** (fast). No browser required.
-- Booking platforms are flagged so you do not pitch “website redesign” to a Vagaro link.
-- Email discovery from website contact pages can be a later enhancement.

@@ -146,6 +146,8 @@ class EmailGenerator:
                     *[f"- {issue}" for issue in issues[:6]],
                 ]
             )
+            if report.metrics.is_wordpress:
+                lines.append("Note: site runs on WordPress — sender can offer maintenance.")
         elif kind == "no_website":
             lines.append("They have no website — pitch a simple starter site.")
         elif kind == "social_only":

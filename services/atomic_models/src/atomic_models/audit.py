@@ -29,6 +29,11 @@ class AuditMetrics(BaseModel):
     cta_count: int | None = None
     contact_email: str | None = None
     contact_email_source: str | None = None
+    has_local_business_schema: bool | None = None
+    is_wordpress: bool | None = None
+    copyright_year: int | None = None
+    contact_page_url: str | None = None
+    contact_page_form_count: int | None = None
 
 
 class WebsiteAuditReport(BaseModel):
