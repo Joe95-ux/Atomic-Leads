@@ -23,8 +23,8 @@ class OutreachSettings:
     sender_role: str = "I help local businesses with websites and Google visibility"
     delay_ms: int = 800
     output_dir: Path = DEFAULT_OUTPUT_DIR
-    min_issues_to_draft: int = 1
     skip_healthy_score: int = 92
+    draft_no_website: bool = True
 
     @classmethod
     def from_env(cls, **overrides: Any) -> "OutreachSettings":
@@ -48,4 +48,8 @@ class OutreachSettings:
             ),
             delay_ms=int(overrides.get("delay_ms", os.getenv("OUTREACH_DELAY_MS", "800"))),
             output_dir=Path(output_dir) if output_dir is not None else DEFAULT_OUTPUT_DIR,
+            draft_no_website=str(
+                overrides.get("draft_no_website", os.getenv("OUTREACH_DRAFT_NO_WEBSITE", "true"))
+            ).lower()
+            in {"1", "true", "yes", "on"},
         )

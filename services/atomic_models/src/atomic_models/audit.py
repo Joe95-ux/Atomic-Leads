@@ -27,6 +27,8 @@ class AuditMetrics(BaseModel):
     has_schema: bool | None = None
     form_count: int | None = None
     cta_count: int | None = None
+    contact_email: str | None = None
+    contact_email_source: str | None = None
 
 
 class WebsiteAuditReport(BaseModel):

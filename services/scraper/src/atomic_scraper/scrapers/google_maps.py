@@ -11,7 +11,7 @@ from playwright.sync_api import Page, TimeoutError as PlaywrightTimeout
 from playwright.sync_api import sync_playwright
 
 from atomic_models.lead import BusinessLead
-from atomic_models.urls import is_booking_platform, normalize_url
+from atomic_models.urls import is_booking_platform, is_chain_franchise, is_social_only, normalize_url
 
 from atomic_scraper.config import ScraperSettings
 
@@ -276,7 +276,7 @@ class GoogleMapsScraper:
         return None
 
     def _is_usable_website(self, href: str) -> bool:
-        if is_booking_platform(href):
+        if is_booking_platform(href) or is_social_only(href) or is_chain_franchise(href):
             return False
         return self._is_external_website(href)
 

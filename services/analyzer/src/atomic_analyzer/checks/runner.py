@@ -1,7 +1,7 @@
 from atomic_models.audit import AuditIssue, AuditMetrics
 from atomic_models.constants import CTA_KEYWORDS
 from atomic_models.lead import BusinessLead
-from atomic_models.urls import is_booking_platform
+from atomic_models.urls import is_booking_platform, is_chain_franchise, is_social_only
 
 from atomic_analyzer.config import AnalyzerSettings
 from atomic_analyzer.page_context import PageContext
@@ -23,6 +23,28 @@ def run_all_checks(
 
     if not lead.website:
         issues.append(_issue("no_website", "No website listed on Google Maps", "critical"))
+        return issues, metrics
+
+    if is_chain_franchise(lead.website):
+        issues.append(
+            _issue(
+                "chain_franchise",
+                "Chain or franchise location page — not a local owner website",
+                "critical",
+            )
+        )
+        metrics.final_url = lead.website
+        return issues, metrics
+
+    if is_social_only(lead.website):
+        issues.append(
+            _issue(
+                "social_only",
+                "Google Maps links to social media instead of an owned website",
+                "critical",
+            )
+        )
+        metrics.final_url = lead.website
         return issues, metrics
 
     if is_booking_platform(lead.website):

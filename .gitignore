@@ -1,0 +1,21 @@
+# Repo root — Atomic Leads monorepo
+
+# Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python pipeline outputs (only .gitkeep tracked)
+services/**/output/*
+!services/**/output/.gitkeep
+services/.venv/
+services/**/.venv/
+
+# Node / Next.js (see atomic-leads/.gitignore for app-specific rules)
+atomic-leads/node_modules/
+atomic-leads/.next/
+
+# OS
+.DS_Store
+Thumbs.db

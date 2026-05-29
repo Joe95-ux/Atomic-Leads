@@ -1,4 +1,4 @@
-from atomic_analyzer.models import AuditIssue
+from atomic_models.audit import AuditIssue
 
 SEVERITY_PENALTY = {
     "critical": 25,

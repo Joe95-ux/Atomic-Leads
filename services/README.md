@@ -43,6 +43,15 @@ atomic-outreach draft analyzer/output/roofing-...-audit-....jsonl
 
 Each step writes a `.meta.json` with `artifacts` paths for the next step.
 
+**Do not commit** `output/` run files or `.env` — only `output/.gitkeep` is tracked. See root `.gitignore` and `services/.gitignore`.
+
+## P0 quality gates (built-in)
+
+- **Chains/franchises** (Hair Cuttery, Sola, etc.) — skipped for outreach
+- **Social-only links** (Facebook, Instagram) — separate email angle
+- **No website** — optional “starter site” email (`OUTREACH_DRAFT_NO_WEBSITE=true`)
+- **Contact email finder** — crawls homepage + `/contact` during audit
+
 ## Packages
 
 | Package | CLI | Role |

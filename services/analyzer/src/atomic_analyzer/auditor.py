@@ -3,10 +3,11 @@ import time
 
 from atomic_models.audit import WebsiteAuditReport
 from atomic_models.lead import BusinessLead
-from atomic_models.urls import is_booking_platform, normalize_url
+from atomic_models.urls import is_booking_platform, is_chain_franchise, is_social_only, normalize_url
 
 from atomic_analyzer.checks.runner import run_all_checks
 from atomic_analyzer.config import AnalyzerSettings
+from atomic_analyzer.contact_finder import find_contact_email
 from atomic_analyzer.fetch import fetch_page, try_fetch_http_fallback
 from atomic_analyzer.scoring import compute_score
 
@@ -23,35 +24,32 @@ class WebsiteAuditor:
                 business=lead.name,
                 website=None,
                 issues=["No website listed on Google Maps"],
+                issue_details=[],
                 audit_status="skipped",
                 skip_reason="no_website",
                 lead=lead,
                 score=0,
             )
 
-        if is_booking_platform(lead.website):
-            issues, metrics = run_all_checks(lead, None, settings=self.settings)
-            return WebsiteAuditReport(
-                business=lead.name,
-                website=lead.website,
-                issues=[i.message for i in issues],
-                issue_details=issues,
-                score=compute_score(issues),
-                metrics=metrics,
-                lead=lead,
-            )
+        website = lead.website
+        early_skip = is_chain_franchise(website) or is_social_only(website) or is_booking_platform(website)
 
         page = None
         fetch_error: str | None = None
-        try:
-            page = fetch_page(lead.website, self.settings)
-            if page and not page.has_ssl:
-                http_page = try_fetch_http_fallback(lead.website, self.settings)
-                if http_page and http_page.status_code < 400:
-                    page = http_page
-        except Exception as exc:
-            fetch_error = str(exc)[:200]
-            logger.warning("Fetch failed for %s: %s", lead.website, fetch_error)
+        homepage_html: str | None = None
+
+        if not early_skip:
+            try:
+                page = fetch_page(website, self.settings)
+                homepage_html = page.html
+                if page and not page.has_ssl:
+                    http_page = try_fetch_http_fallback(website, self.settings)
+                    if http_page and http_page.status_code < 400:
+                        page = http_page
+                        homepage_html = page.html
+            except Exception as exc:
+                fetch_error = str(exc)[:200]
+                logger.warning("Fetch failed for %s: %s", website, fetch_error)
 
         issues, metrics = run_all_checks(
             lead,
@@ -60,15 +58,37 @@ class WebsiteAuditor:
             fetch_error=fetch_error,
         )
 
+        # Contact email discovery (owned sites only)
+        updated_lead = lead
+        codes = {i.code for i in issues}
+        if (
+            not early_skip
+            and "unreachable" not in codes
+            and not lead.email
+        ):
+            email, source = find_contact_email(website, homepage_html, self.settings)
+            if email:
+                metrics.contact_email = email
+                metrics.contact_email_source = source
+                updated_lead = lead.model_copy(update={"email": email})
+                logger.info("Found contact email for %s: %s (%s)", lead.name, email, source)
+
+        skip_reason: str | None = None
+        audit_status = "ok"
+        if "chain_franchise" in codes:
+            skip_reason = "chain_franchise"
+            audit_status = "skipped"
+
         return WebsiteAuditReport(
             business=lead.name,
-            website=normalize_url(lead.website) if lead.website else None,
+            website=normalize_url(website) if website else None,
             issues=[i.message for i in issues],
             issue_details=issues,
             score=compute_score(issues),
             metrics=metrics,
-            lead=lead,
-            audit_status="error" if fetch_error and not page else "ok",
+            lead=updated_lead,
+            audit_status=audit_status,
+            skip_reason=skip_reason,
         )
 
     def audit_many(self, leads: list[BusinessLead]) -> list[WebsiteAuditReport]:

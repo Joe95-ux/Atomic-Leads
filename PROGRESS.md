@@ -223,6 +223,7 @@ npm run dev
 | 2026-05-27 | Added `services/scraper/` — Google Maps CLI, JSONL/CSV export |
 | 2026-05-27 | Added `services/analyzer/` — `atomic-audit run` on scraper JSONL |
 | 2026-05-27 | Shared `atomic_models`; outreach + `atomic-pipeline run` |
+| 2026-05-29 | P0: chain/social detection, contact email finder, outreach pitch types |
 
 ---
 

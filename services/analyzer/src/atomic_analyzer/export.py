@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from atomic_models.audit import AuditRunMeta, WebsiteAuditReport
+from atomic_models.classify import outreach_skip_reason, pitch_type
 from atomic_models.io import write_jsonl
 from atomic_models.run import RunArtifacts, slugify, timestamp_slug
 
@@ -15,6 +16,9 @@ def write_summary_json(reports: list[WebsiteAuditReport], path: Path) -> None:
             "website": r.website,
             "issues": r.issues,
             "score": r.score,
+            "contact_email": r.lead.email if r.lead else None,
+            "pitch_type": pitch_type(r),
+            "skip_outreach": outreach_skip_reason(r),
         }
         for r in reports
     ]
