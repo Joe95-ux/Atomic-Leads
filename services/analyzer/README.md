@@ -27,7 +27,11 @@ Audits business websites from **scraper JSONL** output and produces sales-ready 
 | **contact_page_no_form** | Contact page with no form or email |
 | **no_contact_page** | No working contact URL found |
 
-Contact email is discovered during the same contact-page pass.
+Contact email is discovered during the contact-page pass. Sites with **Sucuri/JS bot walls** are re-fetched with **Playwright** when `ANALYZER_USE_PLAYWRIGHT=true` (default).
+
+| Issue | What it detects |
+|-------|-----------------|
+| **bot_protected** | Bot wall blocked HTTP read; email may need manual lookup unless Playwright succeeded |
 
 ## Setup
 

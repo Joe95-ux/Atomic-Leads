@@ -225,6 +225,7 @@ npm run dev
 | 2026-05-27 | Shared `atomic_models`; outreach + `atomic-pipeline run` |
 | 2026-05-29 | P0: chain/social detection, contact email finder, outreach pitch types |
 | 2026-05-29 | P1 audit: LocalBusiness schema, WordPress, copyright, contact page checks |
+| 2026-05-30 | Playwright fallback for bot-protected sites (Sucuri); `bot_protected` metric |
 
 ---
 

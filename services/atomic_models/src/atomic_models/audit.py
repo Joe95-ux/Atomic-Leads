@@ -34,6 +34,8 @@ class AuditMetrics(BaseModel):
     copyright_year: int | None = None
     contact_page_url: str | None = None
     contact_page_form_count: int | None = None
+    bot_protected: bool | None = None
+    fetch_mode: str | None = None  # http | playwright
 
 
 class WebsiteAuditReport(BaseModel):
